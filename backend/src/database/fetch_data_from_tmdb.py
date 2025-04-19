@@ -3,9 +3,9 @@
 
 import requests, csv, os, time
 from dotenv import load_dotenv
+from backend.src.api import get_api_key
 
-load_dotenv()
-API_KEY = os.getenv("TMDB_API_KEY")
+API_KEY = get_api_key("TMDB_API_KEY")
 
 # First, fetch the genre list
 genre_response = requests.get(

@@ -1,7 +1,7 @@
 import csv, os, openai, numpy as np #, psycopg2, json, time
-from ..api import get_openai_key
+from backend.src.api import get_api_key
 
-openai.api_key = get_openai_key()
+openai.api_key = get_api_key("OPENAI_API_KEY")
 
 MODEL = "text-embedding-3-small"       # 1.5 ¢ per 1 k tokens, 1536-dim output :contentReference[oaicite:0]{index=0}
 BATCH  = 100                            # keep requests < 2048 tokens
