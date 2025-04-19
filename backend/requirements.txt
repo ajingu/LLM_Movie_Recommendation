@@ -1,3 +1,11 @@
+# FastAPI Server
 fastapi==0.103.2
-uvicorn==0.22.0
-pydantic==2.4.2 
+uvicorn[standard]==0.22.0  # Use [standard] for extra server features if needed
+pydantic==2.4.2
+
+# Database & Embeddings
+chromadb>=0.4.22 # Specify a version known to be stable
+openai>=1.0.0
+numpy>=1.21.0
+python-dotenv>=1.0.0
+requests>=2.25.0 
