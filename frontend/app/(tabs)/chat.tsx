@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import MovieItem, { Movie } from '../../components/MovieItem'; // Reuse MovieItem
+import MovieCard from '../../components/MovieCard'; // Import MovieCard component
 
 // Re-use API URL configuration (ensure it's correct!)
 const API_BASE_URL = 'http://172.16.7.45:8000/api'; // Example: 'http://192.168.1.105:8000/api'
@@ -24,6 +25,7 @@ interface Message {
   role: 'user' | 'assistant';
   text?: string; // For text messages
   movies?: Movie[]; // For assistant responses with movies
+  isTyping?: boolean; // Optional typing indicator
 }
 
 export default function ChatScreen() {
@@ -101,7 +103,8 @@ export default function ChatScreen() {
         id: Date.now().toString() + '-assistant',
         role: 'assistant',
         movies: data.results || [],
-        text: data.results?.length > 0 ? undefined : "Sorry, I couldn't find any matches for that."
+        text: data.results?.length > 0 ? undefined : "Sorry, I couldn't find any matches for that.",
+        isTyping: true,
       };
       addMessage(assistantMessage);
 
@@ -112,36 +115,67 @@ export default function ChatScreen() {
       addMessage({ 
           id: Date.now().toString() + '-error', 
           role: 'assistant', 
-          text: `Error: ${err.message || 'Failed to fetch chat results.'}` 
+          text: `Error: ${err.message || 'Failed to fetch chat results.'}`,
+          isTyping: false,
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleMoviePress = (movie: Movie) => {
+    // Handle movie press logic
+    console.log('Movie pressed:', movie);
+  };
+
   // Render individual messages
   const renderMessage = ({ item }: { item: Message }) => {
-    if (item.role === 'user') {
+    // If the message is from the assistant and has movies
+    if (item.role === 'assistant' && item.movies && item.movies.length > 0) {
       return (
-        <View style={[styles.messageBubble, styles.userMessage]}>
-          <Text style={styles.messageText}>{item.text}</Text>
+        <View style={styles.recommendationContainer}>
+          {/* Header bubble for recommendations */}
+          <View style={[styles.messageBubble, styles.assistantMessage, styles.headerBubble]}>
+            <Text style={styles.messageText}>Here are some recommendations:</Text>
+          </View>
+          
+          {/* Movies recommendations below the header */}
+          <View style={styles.movieListOuterContainer}>
+            <FlatList
+              data={item.movies}
+              keyExtractor={(movie) => movie.id.toString()}
+              renderItem={({ item: movie }) => (
+                <MovieCard 
+                  title={movie.title} 
+                  imageUrl={movie.poster_path ? 
+                    `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 
+                    'https://via.placeholder.com/150x225?text=No+Image'
+                  } 
+                  rating={movie.vote_average || 0} 
+                  year={movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'} 
+                  onPress={() => handleMoviePress(movie)}
+                />
+              )}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.movieListContainer}
+            />
+          </View>
         </View>
       );
-    }
-
-    // Assistant message (can contain text OR movies)
+    } 
+    
+    // Regular messages (user or assistant without movies)
     return (
-      <View style={[styles.messageBubble, styles.assistantMessage]}>
-        {item.text && (
-            <Text style={styles.messageText}>{item.text}</Text>
-        )}
-        {item.movies && item.movies.length > 0 && (
-          <View style={styles.movieListContainer}>
-            <Text style={styles.assistantInfoText}>Here are some recommendations:</Text>
-            {item.movies.map(movie => (
-              <MovieItem key={movie.id} movie={movie} />
-            ))}
-          </View>
+      <View
+        style={[
+          styles.messageBubble,
+          item.role === 'user' ? styles.userMessage : styles.assistantMessage,
+        ]}
+      >
+        <Text style={styles.messageText}>{item.content}</Text>
+        {item.role === 'assistant' && item.isTyping && (
+          <Text style={styles.assistantInfoText}>Typing...</Text>
         )}
       </View>
     );
@@ -150,43 +184,46 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoiding}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 60 : 0} // Adjust offset as needed
+        behavior={Platform.OS === "ios" ? "padding" : "padding"} 
+        style={styles.keyboardAvoiding} // Ensure KAV takes full space
       >
-        <View style={styles.container}>
-          <Text style={styles.title}>Movie Chat</Text>
-          
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={(item) => item.id}
-            style={styles.chatArea}
-            contentContainerStyle={styles.chatContent}
-          />
-
-          {isLoading && <ActivityIndicator size="small" color="#0000ff" style={styles.loader} />}
-          {error && !isLoading && <Text style={styles.errorText}>{error}</Text>}
-          
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Ask about movies..."
-              value={inputText}
-              onChangeText={setInputText}
-              onSubmitEditing={handleSend}
-              editable={!isLoading}
+        {/* Title moved outside the main content/input area if needed, or keep inside container */}
+        {/* Option 1: Title inside scrollable area's container */}
+         <View style={styles.innerContainer}> 
+            <Text style={styles.title}>Movie Chat</Text>
+            
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={(item) => item.id}
+              style={styles.chatArea} // List takes available space
+              contentContainerStyle={styles.chatContent}
             />
-            <Button title="Send" onPress={handleSend} disabled={isLoading || !inputText.trim()} />
-          </View>
+
+            {/* Loader and Error can be tricky with KAV, maybe position absolutely or keep here? */}
+             {isLoading && <ActivityIndicator size="small" color="#0000ff" style={styles.loader} />}
+             {error && !isLoading && <Text style={styles.errorText}>{error}</Text>}
+         </View>
+          
+        {/* Input container is now a direct child of KAV, pushed up by padding */}
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Ask about movies..."
+            value={inputText}
+            onChangeText={setInputText}
+            onSubmitEditing={handleSend}
+            editable={!isLoading}
+          />
+          <Button title="Send" onPress={handleSend} disabled={isLoading || !inputText.trim()} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-// --- Styles --- (Combine and adapt styles)
+// --- Styles --- 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -194,10 +231,14 @@ const styles = StyleSheet.create({
   },
   keyboardAvoiding: {
     flex: 1,
+    // Removed container style from here, apply flex direction if needed
+    // flexDirection: 'column', // KAV default might be column
   },
-  container: {
-    flex: 1,
-    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 10 : 15,
+  // New container for the content above the input
+  innerContainer: {
+      flex: 1, // Takes up space above the input container
+      paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 10 : 15,
+      // Removed paddingBottom from here
   },
   title: {
     fontSize: 24,
@@ -207,20 +248,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   chatArea: {
-    flex: 1,
+    flex: 1, // List still takes available space within innerContainer
     paddingHorizontal: 15,
   },
   chatContent: {
-     paddingBottom: 10, 
+     paddingBottom: 10, // Keep small padding for the last item from list edge
   },
   loader: {
-    marginVertical: 5,
+    // Position loader appropriately if needed, maybe absolute?
+    // position: 'absolute', top: 50, alignSelf: 'center'
+    paddingVertical: 5, // Simple vertical padding for now
   },
   errorText: {
       color: 'red',
       textAlign: 'center',
       paddingHorizontal: 15,
-      marginVertical: 5,
+      paddingVertical: 5, // Simple vertical padding for now
   },
   inputContainer: {
     flexDirection: 'row',
@@ -229,6 +272,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#ccc',
     backgroundColor: '#fff',
     alignItems: 'center',
+    // This container is no longer flexed, it sits at the bottom
   },
   input: {
     flex: 1,
@@ -243,7 +287,7 @@ const styles = StyleSheet.create({
   messageBubble: {
     padding: 10,
     borderRadius: 15,
-    marginBottom: 10,
+    marginBottom: 20, // Increased margin further
     maxWidth: '80%', 
   },
   userMessage: {
@@ -255,6 +299,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ECECEC', // Light gray for assistant
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 0,
+    // Ensure the bubble expands with content
+    alignItems: 'flex-start', // Align internal items to the start
   },
   messageText: {
     fontSize: 16,
@@ -267,5 +313,17 @@ const styles = StyleSheet.create({
       fontStyle: 'italic',
       color: '#555',
       marginBottom: 5,
-  }
+  },
+  recommendationContainer: {
+    width: '100%', // Use full width for the container
+    marginBottom: 20,
+    paddingTop: 10, // Add padding at top to prevent overlap
+  },
+  headerBubble: {
+    marginBottom: 10, // Space between header and movies
+  },
+  movieListOuterContainer: {
+    paddingLeft: 5, // Slight indent for the movie list
+    width: '95%', // Slightly less than full width
+  },
 }); 
