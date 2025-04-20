@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Keyboard,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import MovieItem, { Movie } from '../../components/MovieItem'; // Import the component and type
 
@@ -61,7 +63,7 @@ export default function SearchScreen() {
       }
 
       const data = await response.json();
-      console.log('Search results:', data.results);
+      // console.log('Search results:', data.results);
       setResults(data.results || []); // Ensure results is always an array
 
     } catch (err: any) {
@@ -119,7 +121,10 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 15,
+    paddingHorizontal: 15, // Keep horizontal padding
+    paddingBottom: 15, // Keep bottom padding
+    // Add platform-specific top padding, providing a fallback for currentHeight
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) + 10 : 15, 
   },
   title: {
     fontSize: 24,
