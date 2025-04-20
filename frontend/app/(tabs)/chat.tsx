@@ -24,8 +24,14 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   text?: string; // For text messages
+  content?: string; // Alternative name for text (for compatibility)
   movies?: Movie[]; // For assistant responses with movies
   isTyping?: boolean; // Optional typing indicator
+}
+
+// Update the Movie interface to include vote_average
+interface ExtendedMovie extends Movie {
+  vote_average?: number;
 }
 
 export default function ChatScreen() {
@@ -37,6 +43,7 @@ export default function ChatScreen() {
 
   // Function to add a new message and scroll
   const addMessage = (newMessage: Message) => {
+    console.log('Adding message:', newMessage);
     setMessages(prev => [...prev, newMessage]);
   };
 
@@ -47,8 +54,15 @@ export default function ChatScreen() {
     }
   }, [messages]);
 
+  // Debug messages when they change
+  useEffect(() => {
+    console.log('Messages updated:', messages);
+  }, [messages]);
+
   const handleSend = async () => {
     const userMessageText = inputText.trim();
+    console.log('Sending message text:', userMessageText);
+    
     if (!userMessageText || isLoading) {
       return;
     }
@@ -69,10 +83,10 @@ export default function ChatScreen() {
 
     // Prepare conversation history for API
     const apiMessages = [...messages, userMessage].map(msg => ({
-        role: msg.role,
-        // Send movie data as simple text placeholder for now, 
-        // or structure assistant messages differently if backend needs it
-        content: msg.text ?? "[movie recommendations shown]" 
+      role: msg.role,
+      // Send movie data as simple text placeholder for now, 
+      // or structure assistant messages differently if backend needs it
+      content: msg.text ?? "[movie recommendations shown]" 
     }));
 
     try {
@@ -130,6 +144,15 @@ export default function ChatScreen() {
 
   // Render individual messages
   const renderMessage = ({ item }: { item: Message }) => {
+    // If the message is from the user, render user message bubble
+    if (item.role === 'user') {
+      return (
+        <View style={[styles.messageBubble, styles.userMessage]}>
+          <Text style={styles.messageText}>{item.text}</Text>
+        </View>
+      );
+    }
+    
     // If the message is from the assistant and has movies
     if (item.role === 'assistant' && item.movies && item.movies.length > 0) {
       return (
@@ -151,7 +174,7 @@ export default function ChatScreen() {
                     `https://image.tmdb.org/t/p/w500${movie.poster_path}` : 
                     'https://via.placeholder.com/150x225?text=No+Image'
                   } 
-                  rating={movie.vote_average || 0} 
+                  rating={(movie as ExtendedMovie).vote_average || 0} 
                   year={movie.release_date ? movie.release_date.substring(0, 4) : 'N/A'} 
                   onPress={() => handleMoviePress(movie)}
                 />
@@ -165,16 +188,11 @@ export default function ChatScreen() {
       );
     } 
     
-    // Regular messages (user or assistant without movies)
+    // Regular assistant message
     return (
-      <View
-        style={[
-          styles.messageBubble,
-          item.role === 'user' ? styles.userMessage : styles.assistantMessage,
-        ]}
-      >
-        <Text style={styles.messageText}>{item.content}</Text>
-        {item.role === 'assistant' && item.isTyping && (
+      <View style={[styles.messageBubble, styles.assistantMessage]}>
+        <Text style={styles.messageText}>{item.text || item.content || ''}</Text>
+        {item.isTyping && (
           <Text style={styles.assistantInfoText}>Typing...</Text>
         )}
       </View>
@@ -195,10 +213,14 @@ export default function ChatScreen() {
             <FlatList
               ref={flatListRef}
               data={messages}
+              extraData={messages}
               renderItem={renderMessage}
               keyExtractor={(item) => item.id}
               style={styles.chatArea} // List takes available space
               contentContainerStyle={styles.chatContent}
+              ListEmptyComponent={() => (
+                <Text style={styles.emptyText}>No messages yet. Start a conversation!</Text>
+              )}
             />
 
             {/* Loader and Error can be tricky with KAV, maybe position absolutely or keep here? */}
@@ -212,7 +234,10 @@ export default function ChatScreen() {
             style={styles.input}
             placeholder="Ask about movies..."
             value={inputText}
-            onChangeText={setInputText}
+            onChangeText={(text) => {
+              console.log('Input text changed:', text);
+              setInputText(text);
+            }}
             onSubmitEditing={handleSend}
             editable={!isLoading}
           />
@@ -272,7 +297,12 @@ const styles = StyleSheet.create({
     borderTopColor: '#ccc',
     backgroundColor: '#fff',
     alignItems: 'center',
-    // This container is no longer flexed, it sits at the bottom
+    zIndex: 10, // Ensure it's above other elements
+    // To ensure it's at the bottom and visible
+    position: 'relative',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
   input: {
     flex: 1,
@@ -283,6 +313,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     borderRadius: 20, // Rounded input
     backgroundColor: '#fff',
+    minHeight: 40, // Ensure a minimum height
   },
   messageBubble: {
     padding: 10,
@@ -325,5 +356,10 @@ const styles = StyleSheet.create({
   movieListOuterContainer: {
     paddingLeft: 5, // Slight indent for the movie list
     width: '95%', // Slightly less than full width
+  },
+  emptyText: {
+    textAlign: 'center',
+    padding: 10,
+    color: '#555',
   },
 }); 
