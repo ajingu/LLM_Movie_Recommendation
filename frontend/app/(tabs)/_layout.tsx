@@ -1,31 +1,34 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-// If you want icons, you'll need to install an icon library like @expo/vector-icons
-// import { Ionicons } from '@expo/vector-icons'; 
+// Import Ionicons for tab bar icons
+import { Ionicons } from '@expo/vector-icons'; 
 
 export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        // Example styling - adjust as needed
-        // tabBarActiveTintColor: 'blue',
+        // Styling for tabs
+        tabBarActiveTintColor: '#0a7ea4', // Match the link color from not-found page
+        tabBarInactiveTintColor: '#666',
+        tabBarStyle: {
+          borderTopWidth: 1,
+          borderTopColor: '#e0e0e0',
+        }
       }}>
       <Tabs.Screen
         name="index" // Search screen
         options={{
           title: 'Search',
-          // Example Icon:
-          // tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="search" color={color} size={size} />,
         }}
       />
        <Tabs.Screen
         name="chat" // New Chat screen
         options={{
           title: 'Chat',
-           // Example Icon:
-          // tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" color={color} size={size} />,
         }}
       />
     </Tabs>
