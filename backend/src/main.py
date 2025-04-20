@@ -21,7 +21,3 @@ app.include_router(search.router, prefix="/api") # Add a prefix like /api
 @app.get("/")
 async def root():
     return {"message": "Welcome to LLM Mobile Backend"}
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"} 

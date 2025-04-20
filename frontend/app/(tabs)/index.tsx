@@ -1,74 +1,166 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  TextInput,
+  Button,
+  FlatList,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  SafeAreaView,
+  Keyboard,
+} from 'react-native';
+import MovieItem, { Movie } from '../../components/MovieItem'; // Import the component and type
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+// --- Configuration ---
+// IMPORTANT: Replace <YOUR_MACHINE_LOCAL_IP> with your actual backend server's local IP address.
+// If running backend locally and testing on a simulator/emulator: use your machine's local IP.
+// If testing on a physical device, ensure it's on the same network and use the machine's local IP.
+// Do NOT use 'localhost' unless the backend is also running on the device itself.
+const API_BASE_URL = 'http://172.16.7.45:8000/api'; // Example: 'http://192.168.1.105:8000/api'
 
-export default function HomeScreen() {
+export default function SearchScreen() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<Movie[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = async () => {
+    if (!query.trim()) {
+      setError('Please enter a search query.');
+      return;
+    }
+
+    console.log(`Searching for: ${query}`);
+    setIsLoading(true);
+    setError(null);
+    setResults([]); // Clear previous results
+    Keyboard.dismiss(); // Hide keyboard
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query_text: query,
+          n_results: 10, // Request 10 results
+        }),
+      });
+
+      if (!response.ok) {
+        let errorDetail = `HTTP error! status: ${response.status}`;
+        try {
+            const errorJson = await response.json();
+            errorDetail = errorJson.detail || errorDetail;
+        } catch (e) {
+            // Ignore if response is not JSON
+        }
+        throw new Error(errorDetail);
+      }
+
+      const data = await response.json();
+      console.log('Search results:', data.results);
+      setResults(data.results || []); // Ensure results is always an array
+
+    } catch (err: any) {
+      console.error('Search failed:', err);
+      setError(err.message || 'Failed to fetch search results. Check backend connection.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Movie Search</Text>
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter movie description..."
+            value={query}
+            onChangeText={setQuery}
+            onSubmitEditing={handleSearch} // Allow searching by pressing return/enter
+          />
+          <Button title="Search" onPress={handleSearch} disabled={isLoading} />
+        </View>
+
+        {isLoading && <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />}
+
+        {error && <Text style={styles.errorText}>{error}</Text>}
+
+        {!isLoading && !error && results.length === 0 && !query && (
+             <Text style={styles.infoText}>Enter a query to search for movies.</Text>
+        )}
+
+         {!isLoading && !error && results.length === 0 && query && (
+             <Text style={styles.infoText}>No results found for \"{query}\".</Text>
+         )}
+
+
+        <FlatList
+          data={results}
+          renderItem={({ item }) => <MovieItem movie={item} />}
+          keyExtractor={(item) => item.id}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f0f0f0', // Background for the whole screen area
+  },
+  container: {
+    flex: 1,
+    padding: 15,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  searchContainer: {
     flexDirection: 'row',
+    marginBottom: 15,
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginRight: 10,
+    borderRadius: 5,
+    backgroundColor: '#fff',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  loader: {
+    marginTop: 20,
   },
+  errorText: {
+    color: 'red',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  infoText: {
+      textAlign: 'center',
+      marginTop: 20,
+      fontSize: 16,
+      color: '#555',
+  },
+  list: {
+    flex: 1, // Ensure list takes available space
+  },
+  listContent: {
+     paddingBottom: 20, // Add padding at the bottom of the scrollable content
+  }
 });
