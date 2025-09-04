@@ -1,6 +1,6 @@
 # LLM Mobile Movie Search
 
-This is a full-stack mobile application that leverages Large Language Models (LLMs) and vector embeddings to provide a powerful semantic search and conversational recommendation engine for movies.
+This is a full-stack mobile application that leverages LLMs and vector embeddings to provide a semantic search and conversational recommendation engine for movies.
 
 https://github.com/user-attachments/assets/73c28a2f-a09e-41fb-bff7-5030ced052a3
 
@@ -10,21 +10,6 @@ The project consists of a React Native (Expo) frontend and a Python (FastAPI) ba
 
 1.  **Semantic Search:** A traditional search screen where users can type in a description, a theme, or a vague idea of a movie, and the system will find the most relevant matches based on semantic meaning, not just keywords.
 2.  **Conversational Chat:** A chat interface where users can interact with an AI assistant. Users can ask for recommendations, refine their search, and get movie suggestions in a natural, conversational flow.
-
-## ✨ Features
-
-- **Backend:**
-  - Built with **FastAPI** for high performance.
-  - Uses **The Movie Database (TMDB)** as the data source for movies.
-  - Generates vector embeddings for movie overviews for semantic search.
-  - `/api/search` endpoint for direct semantic search.
-  - `/api/chat_search` endpoint that integrates with an LLM to provide conversational responses and tool-use (movie search).
-- **Frontend:**
-  - Cross-platform mobile app built with **React Native & Expo**.
-  - Written in **TypeScript** for type safety and better developer experience.
-  - Tab-based navigation using **Expo Router**.
-  - **Search Tab:** Displays search results in a clean, scrollable list.
-  - **Chat Tab:** A familiar chat UI that can render both text messages and interactive horizontal carousels of movie recommendations.
 
 ## 🛠️ Tech Stack
 
@@ -116,14 +101,6 @@ The project consists of a React Native (Expo) frontend and a Python (FastAPI) ba
     ```
 
 5.  Scan the QR code with the Expo Go app on your iOS or Android device to run the application. Ensure your device is on the same Wi-Fi network as your computer.
-
-## 🖼️ Screenshots
-
-_(Placeholder for app screenshots)_
-
-| Search Screen  | Chat Screen  |
-| :------------: | :----------: |
-| !Search Screen | !Chat Screen |
 
 ## ⚙️ How It Works
 
