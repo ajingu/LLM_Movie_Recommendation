@@ -46,7 +46,12 @@ for page in range(1, 60):            # ~1000 movies is enough for an MVP
 # Convert dictionary values to list for writing to CSV
 unique_movies = list(movies.values())
 
-with open("../../data/movies_with_genres.csv", "w", newline="", encoding="utf-8") as f:
+# Define the output path relative to this script's location
+output_path = os.path.join(os.path.dirname(__file__), "../../data/movies_with_genres.csv")
+
+with open(output_path, "w", newline="", encoding="utf-8") as f:
     writer = csv.DictWriter(f, fieldnames=fields)
     writer.writeheader()
     writer.writerows(unique_movies)
+
+print(f"Successfully wrote {len(unique_movies)} movies to {output_path}")
